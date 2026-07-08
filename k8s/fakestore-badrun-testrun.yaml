@@ -1,0 +1,63 @@
+# =============================================================
+# FakeStore – "Bad Run" Demo-Szenario
+# =============================================================
+#
+# Zweck: Demonstriert wie ein FEHLERHAFTER Testlauf im
+# Grafana-Dashboard aussieht.
+#
+# Eingebaute Fehler:
+#   - USERNAME/PASSWORD falsch → Login schlägt fehl
+#   - Hohe VU-Zahl ohne ThinkTime → höhere Lastspitzen
+#   - TEST_RUN_ID enthält "BADRUN" → im Dashboard sofort erkennbar
+#
+# Start:
+#   ./demo-badrun.sh
+# =============================================================
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: fakestore-badrun
+  namespace: k6-testing
+spec:
+  parallelism: 2
+  script:
+    configMap:
+      name: fakestore-premium-script
+      file: fakestore-premium.js
+  runner:
+    image: grafana/k6:latest
+    env:
+      - name: RUN_MODE
+        value: "cluster"
+      - name: SUMMARY_MODE
+        value: "compact"
+      - name: TEST_RUN_ID
+        value: "${TEST_RUN_ID}"
+      - name: BASE_URL
+        value: "https://fakestoreapi.com"
+      # Falsche Credentials → Login schlägt fehl
+      - name: USERNAME
+        value: "wrong_user"
+      - name: PASSWORD
+        value: "wrong_password"
+      - name: THINK_TIME
+        value: "0.05"
+      - name: TEST_VUS
+        value: "50"
+      - name: GRAFANA_URL
+        value: ""
+      - name: GRAFANA_TOKEN
+        value: ""
+      - name: K6_OUT
+        value: "experimental-prometheus-rw"
+      - name: K6_PROMETHEUS_RW_SERVER_URL
+        value: "http://prometheus-kube-prometheus-prometheus.monitoring:9090/api/v1/write"
+      - name: K6_PROMETHEUS_RW_TREND_STATS
+        value: "p(95),p(99),min,max,avg"
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+      limits:
+        cpu: "2000m"
+        memory: "2Gi"

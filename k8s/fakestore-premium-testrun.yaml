@@ -1,0 +1,48 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: fakestore-premium
+  namespace: k6-testing
+spec:
+  parallelism: 2
+  script:
+    configMap:
+      name: fakestore-premium-script
+      file: fakestore-premium.js
+  runner:
+    image: grafana/k6:latest
+    env:
+      - name: RUN_MODE
+        value: "cluster"
+      - name: SUMMARY_MODE
+        value: "compact"
+      - name: TEST_RUN_ID
+        value: "${TEST_RUN_ID}"
+      - name: BASE_URL
+        value: "https://fakestoreapi.com"
+      - name: USERNAME
+        value: "mor_2314"
+      - name: PASSWORD
+        value: "83r5^_"
+      - name: THINK_TIME
+        value: "0.1"
+      - name: TEST_VUS
+        value: "100"
+      # Grafana Annotations – via .env oder Umgebungsvariable setzen (optional)
+      - name: GRAFANA_URL
+        value: "${GRAFANA_URL}"
+      - name: GRAFANA_TOKEN
+        value: "${GRAFANA_TOKEN}"
+      - name: K6_OUT
+        value: "experimental-prometheus-rw"
+      - name: K6_PROMETHEUS_RW_SERVER_URL
+        value: "http://prometheus-kube-prometheus-prometheus.monitoring:9090/api/v1/write"
+      - name: K6_PROMETHEUS_RW_TREND_STATS
+        value: "p(95),p(99),min,max,avg"
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+      limits:
+        cpu: "2000m"
+        memory: "2Gi"
