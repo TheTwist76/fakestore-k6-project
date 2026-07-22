@@ -77,10 +77,24 @@ spec:
 
 ## Bedienung
 
-Alle Tests anzeigen:
+Alle Tests mit Dateistatus anzeigen:
 
 ```bash
 make list
+```
+
+Die Ausgabe zeigt pro Test:
+
+- Testname
+- ob `test.js` vorhanden ist
+- ob `testrun.yaml` vorhanden ist
+- ob und wie viele Eintraege in `testdatafiles.txt` definiert sind
+- ob eine testbezogene `README.md` vorhanden ist
+
+Details zu einem einzelnen Test anzeigen:
+
+```bash
+make info TEST=verfahren-a
 ```
 
 Test starten:

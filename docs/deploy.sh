@@ -37,26 +37,27 @@ export TESTRUN_NAME
 export CONFIGMAP_NAME
 export TEST_RUN_ID
 
-if [[ ! -d "${TEST_DIR}" ]]; then
-  echo "Fehler: Testverzeichnis nicht gefunden: ${TEST_DIR}"
+fail() {
+  echo "Fehler: $1"
   exit 1
-fi
+}
 
-if [[ ! -f "${SCRIPT_FILE}" ]]; then
-  echo "Fehler: k6-Skript nicht gefunden: ${SCRIPT_FILE}"
-  exit 1
-fi
+require_file() {
+  local file="$1"
+  local label="$2"
 
-if [[ ! -f "${TESTRUN_FILE}" ]]; then
-  echo "Fehler: TestRun YAML nicht gefunden: ${TESTRUN_FILE}"
-  exit 1
-fi
+  [[ -f "${file}" ]] || fail "${label} nicht gefunden: ${file}"
+}
+
+[[ -d "${TEST_DIR}" ]] || fail "Testverzeichnis nicht gefunden: ${TEST_DIR}"
+require_file "${SCRIPT_FILE}" "k6-Skript"
+require_file "${TESTRUN_FILE}" "TestRun YAML"
 
 CONFIGMAP_ARGS=()
 CONFIGMAP_KEYS=()
 CONFIGMAP_FILES=()
 
-has_key() {
+has_configmap_key() {
   local wanted="$1"
   local key
 
@@ -71,14 +72,12 @@ add_configmap_file() {
   local key="$1"
   local file="$2"
 
-  if [[ ! -f "${file}" ]]; then
-    echo "Fehler: Datei fuer ConfigMap nicht gefunden: ${file}"
-    exit 1
-  fi
+  [[ -n "${key}" ]] || fail "Leerer ConfigMap-Dateiname in ${TESTDATAFILES_FILE}"
+  [[ -f "${file}" ]] || fail "Datei fuer ConfigMap nicht gefunden: ${file}"
 
-  if has_key "${key}"; then
-    echo "Fehler: Doppelter ConfigMap-Dateiname: ${key}"
-    echo "Hinweis: Nutze in testdatafiles.txt optional das Format zielname=pfad/zur/datei.json."
+  if has_configmap_key "${key}"; then
+    echo "Doppelter ConfigMap-Dateiname: ${key}"
+    echo "Nutze in testdatafiles.txt das Format zielname=pfad/zur/datei.json."
     exit 1
   fi
 
@@ -175,6 +174,10 @@ echo ""
 echo "Status pruefen:"
 echo "  kubectl get testrun ${TESTRUN_NAME} -n ${NAMESPACE} -o yaml"
 echo "  kubectl describe testrun ${TESTRUN_NAME} -n ${NAMESPACE}"
+echo ""
+echo "Initializer-Probleme analysieren:"
+echo "  kubectl describe pod -n ${NAMESPACE} -l k6_cr=${TESTRUN_NAME}"
+echo "  kubectl logs -n ${NAMESPACE} -l k6_cr=${TESTRUN_NAME} --all-containers=true"
 echo ""
 echo "Aufraeumen:"
 echo "  kubectl delete testrun ${TESTRUN_NAME} -n ${NAMESPACE} --ignore-not-found=true"
