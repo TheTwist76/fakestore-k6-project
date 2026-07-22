@@ -1,0 +1,48 @@
+CONFIGMAP_ARGS=()
+CONFIGMAP_ARGS+=(--from-file="test.js=${SCRIPT_FILE}")
+
+FILES_LIST="${TEST_DIR}/files.txt"
+
+if [[ -f "$FILES_LIST" ]]; then
+  while IFS= read -r file || [[ -n "$file" ]]; do
+    [[ -z "$file" ]] && continue
+    [[ "$file" =~ ^# ]] && continue
+
+    if [[ ! -f "$file" ]]; then
+      echo "Datei aus files.txt nicht gefunden: $file"
+      exit 1
+    fi
+
+    CONFIGMAP_ARGS+=(--from-file="$(basename "$file")=$file")
+  done < "$FILES_LIST"
+fi
+
+kubectl create configmap "${CONFIGMAP_NAME}" \
+  "${CONFIGMAP_ARGS[@]}" \
+  --namespace="${NAMESPACE}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+
+
+
+
+tests/verfahren-a/files.txt
+
+k6-tests/
+├── shared/
+│   └── data/
+│       └── betriebsformen.json
+├── tests/
+│   ├── verfahren-a/
+│   │   ├── test.js
+│   │   ├── files.txt
+│   │   └── testrun.yaml
+│   └── verfahren-b/
+│       ├── test.js
+│       └── testrun.yaml
+└── scripts/
+    └── deploy.sh
+
+const betriebsformen = JSON.parse(open('./betriebsformen.json'));
+
+
